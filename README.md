@@ -1,7 +1,7 @@
 # Nightfall
 Nightfall is a universal Fortnite Redirect/SSL Bypass that has one main goal, that is to redirect from **Epic Games** backend services to a **Hosted Custom Fortnite Backend** to give ability for Fortnite private servers to have Mobile support.
 
-# Branches
+## Branches
 - **Android (Main)**: Android version of the redirect.
 - **iOS**: Coming Soon.
 
@@ -15,7 +15,7 @@ Make sure you configured ``includes/opts.h`` correctly to your liking and instal
 ## How to inject
 Make sure you have **JDK 21** & **Apktool** jar and  decompile the apk using the following command:
 ```bash
-java -jar apktool.jar -d fortnite.apk -o ./Fortnite
+java -jar apktool.jar decode fortnite.apk -o ./Fortnite
 ```
 
 Then put the ``libs/arm64-v8a/libmidnight.so`` file inside ``Fortnite/libs/arm64-v8a`` and then go to ``smali/com/epicgames/ue4/GameActivity.smali`` (the smali folder may vary from each version it can be smali_classes3 for example) and find ``onCreate()`` function and do the following

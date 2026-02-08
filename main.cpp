@@ -6,9 +6,10 @@
 __attribute__((constructor))
 void Main() {
     pthread_t ptid;
-    if (ue_hook::USE_PR) { // TODO: add ue hooks & eos
-        if (eos_hook::USE_EOS) {
-
+    if (FCurlHookOpts::USE_PR) {
+        pthread_create(&ptid, nullptr, Hooks::FCurlHook::SetupHook, nullptr);
+        if (EOSFCurlHookOpts::USE_EOS) {
+            pthread_create(&ptid, nullptr, Hooks::EOSFCurlHook::SetupHook, nullptr);
         }
     } else {
         pthread_create(&ptid, nullptr, Hooks::CurlHook::SetupHook, nullptr);

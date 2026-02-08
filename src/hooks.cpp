@@ -1,10 +1,29 @@
 #include <dlfcn.h>
+#include <cstdio>
 #include <cstring>
+#include <cstdint>
 #include "includes/hooks.h"
 #include "includes/dobby/dobby.h"
 #include "includes/logger.h"
 #include "includes/url.h"
 #include "includes/opts.h"
+
+static void* GetLibBase(const char* libName) {
+    FILE* fp = fopen("/proc/self/maps", "r");
+    if (!fp) return nullptr;
+
+    char line[512];
+    while (fgets(line, sizeof(line), fp)) {
+        if (strstr(line, libName)) {
+            uintptr_t base = strtoull(line, nullptr, 16);
+            fclose(fp);
+            return (void*)base;
+        }
+    }
+
+    fclose(fp);
+    return nullptr;
+}
 
 // ud hooks
 namespace Hooks {
@@ -43,8 +62,9 @@ namespace Hooks {
                 if (UrlCStr) {
                     Url url = Url::ParseUrl(UrlCStr);
                     if (Url::ShouldRedirect(url.host)) {
-                        char* newUrl = ::strdup(Url::CreateUrl(BACKEND_URL, url.pathAndQuery).c_str());
-                        return OG_SETOPT(handle, option, newUrl);
+                        thread_local std::string newUrl;
+                        newUrl = Url::CreateUrl(BACKEND_URL, url.pathAndQuery);
+                        return OG_SETOPT(handle, option, (void*)newUrl.c_str());
                     }
                 }
             } else if (option == 64 && BYPASS_SSL) { // SSL Bypass
@@ -53,5 +73,93 @@ namespace Hooks {
 
             return OG_SETOPT(handle, option, args);
         }
+    }
+
+    bool (*FCurlHook::OGProcessRequest)(void*) = nullptr;
+    void (*FCurlHook::SetUrl)(void*, const void*) = nullptr;
+
+    void* FCurlHook::SetupHook(void* handle) {
+        auto libName = "libUnreal.so"; // idk change this to libUE4.so if ur doing s18
+        handle = dlopen(libName, 2);
+        if (!handle) return nullptr;
+
+        void* base = GetLibBase(libName);
+        if (!base) return nullptr;
+
+        SetUrl = (void (*)(void*, const void*))((char*)base + FCurlHookOpts::SETURL_ADDR);
+        void* processRequestPtr = (char*)base + FCurlHookOpts::PR_ADDR;
+        if (DobbyHook(processRequestPtr, (void*)FCurlHook::ProcessRequest, (void**)&OGProcessRequest) == 0) {
+            LOGI("Successfully hooked Unreal's ProcessRequest!");
+        } else {
+            LOGE("Failed to hook Unreal's ProcessRequest.");
+        }
+
+        return nullptr;
+    }
+
+    bool FCurlHook::ProcessRequest(FCurlHook* req) {
+        if (!req) return false;
+
+        FString::FString& OGUrl = req->GetUrl();
+        if (OGUrl.length == 0 || !OGUrl.data)
+            return OGProcessRequest(req);
+
+        char* OGUrlCStr = FString::ToCStr(&OGUrl);
+        if (!OGUrlCStr)
+            return OGProcessRequest(req);
+
+        Url url = Url::ParseUrl(OGUrlCStr);
+        if (Url::ShouldRedirect(url.host)) {
+            auto* newUrl = (FString::FString*)malloc(sizeof(FString::FString));
+            *newUrl = FString::FromCStr(Url::CreateUrl(BACKEND_URL, url.pathAndQuery).c_str());
+            SetUrl(req, newUrl);
+        }
+
+        free(OGUrlCStr);
+        return OGProcessRequest(req);
+    }
+
+    bool (*EOSFCurlHook::OGProcessRequest)(void*) = nullptr;
+    void (*EOSFCurlHook::SetUrl)(void*, const void*) = nullptr;
+
+    void* EOSFCurlHook::SetupHook(void* handle) {
+        auto libName = "libEOSSDK.so";
+        handle = dlopen(libName, 2);
+        if (!handle) return nullptr;
+
+        void* base = GetLibBase(libName);
+        if (!base) return nullptr;
+
+        SetUrl = (void (*)(void*, const void*))((char*)base + EOSFCurlHookOpts::SETURL_ADDR);
+        void* processRequestPtr = (char*)base + EOSFCurlHookOpts::PR_ADDR;
+        if (DobbyHook(processRequestPtr, (void*)EOSFCurlHook::ProcessRequest, (void**)&OGProcessRequest) == 0) {
+            LOGI("Successfully hooked EOS's ProcessRequest!");
+        } else {
+            LOGE("Failed to hook EOS's ProcessRequest.");
+        }
+
+        return nullptr;
+    }
+
+    bool EOSFCurlHook::ProcessRequest(EOSFCurlHook* req) {
+        if (!req) return false;
+
+        FString::FString& OGUrl = req->GetUrl();
+        if (OGUrl.length == 0 || !OGUrl.data)
+            return OGProcessRequest(req);
+
+        char* OGUrlCStr = FString::ToCStr(&OGUrl);
+        if (!OGUrlCStr)
+            return OGProcessRequest(req);
+
+        Url url = Url::ParseUrl(OGUrlCStr);
+        if (Url::ShouldRedirect(url.host)) {
+            auto* newUrl = (FString::FString*)malloc(sizeof(FString::FString));
+            *newUrl = FString::FromCStr(Url::CreateUrl(BACKEND_URL, url.pathAndQuery).c_str());
+            SetUrl(req, newUrl);
+        }
+
+        free(OGUrlCStr);
+        return OGProcessRequest(req);
     }
 }
