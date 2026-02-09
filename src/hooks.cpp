@@ -64,6 +64,7 @@ namespace Hooks {
                     if (Url::ShouldRedirect(url.host)) {
                         thread_local std::string newUrl;
                         newUrl = Url::CreateUrl(BACKEND_URL, url.pathAndQuery);
+                        LOGI("Redirected Request from %s to %s", UrlCStr, newUrl.c_str());
                         return OG_SETOPT(handle, option, (void*)newUrl.c_str());
                     }
                 }
@@ -97,28 +98,6 @@ namespace Hooks {
         return nullptr;
     }
 
-    bool FCurlHook::ProcessRequest(FCurlHook* req) {
-        if (!req) return false;
-
-        FString::FString& OGUrl = req->GetUrl();
-        if (OGUrl.length == 0 || !OGUrl.data)
-            return OGProcessRequest(req);
-
-        char* OGUrlCStr = FString::ToCStr(&OGUrl);
-        if (!OGUrlCStr)
-            return OGProcessRequest(req);
-
-        Url url = Url::ParseUrl(OGUrlCStr);
-        if (Url::ShouldRedirect(url.host)) {
-            auto* newUrl = (FString::FString*)malloc(sizeof(FString::FString));
-            *newUrl = FString::FromCStr(Url::CreateUrl(BACKEND_URL, url.pathAndQuery).c_str());
-            SetUrl(req, newUrl);
-        }
-
-        free(OGUrlCStr);
-        return OGProcessRequest(req);
-    }
-
     bool (*EOSFCurlHook::OGProcessRequest)(void*) = nullptr;
     void (*EOSFCurlHook::SetUrl)(void*, const void*) = nullptr;
 
@@ -141,25 +120,34 @@ namespace Hooks {
         return nullptr;
     }
 
-    bool EOSFCurlHook::ProcessRequest(EOSFCurlHook* req) {
-        if (!req) return false;
+    namespace InternalHooks {
+        bool InternalProcessRequest(void* Req, bool isEOS) {
+            if (!Req) return false;
 
-        FString::FString& OGUrl = req->GetUrl();
-        if (OGUrl.length == 0 || !OGUrl.data)
-            return OGProcessRequest(req);
+            // getting functions
+            auto OGProcessRequest = isEOS ? EOSFCurlHook::OGProcessRequest : FCurlHook::OGProcessRequest;
+            auto SetUrl = isEOS ? EOSFCurlHook::SetUrl : FCurlHook::SetUrl;
 
-        char* OGUrlCStr = FString::ToCStr(&OGUrl);
-        if (!OGUrlCStr)
-            return OGProcessRequest(req);
+            // scuffed url getter
+            FString::FString& OGUrl = isEOS ? ((EOSFCurlHook*)Req)->GetUrl() : ((FCurlHook*)Req)->GetUrl();
+            if (OGUrl.length == 0 || !OGUrl.data)
+                return OGProcessRequest(Req);
 
-        Url url = Url::ParseUrl(OGUrlCStr);
-        if (Url::ShouldRedirect(url.host)) {
-            auto* newUrl = (FString::FString*)malloc(sizeof(FString::FString));
-            *newUrl = FString::FromCStr(Url::CreateUrl(BACKEND_URL, url.pathAndQuery).c_str());
-            SetUrl(req, newUrl);
+            char* OGUrlCStr = FString::ToCStr(&OGUrl);
+            if (!OGUrlCStr) return OGProcessRequest(Req);
+
+            // proper url setter
+            Url url = Url::ParseUrl(OGUrlCStr);
+            if (Url::ShouldRedirect(url.host)) {
+                std::string newUrlCStr = Url::CreateUrl(BACKEND_URL, url.pathAndQuery);
+                LOGI("Redirected Request from %s to %s", OGUrlCStr, newUrlCStr.c_str());
+                auto* newUrl = (FString::FString*)malloc(sizeof(FString::FString));
+                *newUrl = FString::FromCStr(newUrlCStr.c_str());
+                SetUrl(Req, newUrl);
+            }
+
+            free(OGUrlCStr);
+            return OGProcessRequest(Req);
         }
-
-        free(OGUrlCStr);
-        return OGProcessRequest(req);
     }
 }

@@ -5,6 +5,10 @@
 #include "includes/url.h"
 
 namespace Hooks {
+    namespace InternalHooks {
+        bool InternalProcessRequest(void* Req, bool isEOS);
+    }
+
     namespace CurlHook {
         extern int (*OG_SETOPT)(void*, int, void*);
         void* SetupHook(void*);
@@ -16,7 +20,7 @@ namespace Hooks {
         static bool (*OGProcessRequest)(void*);
 
         FString::FString& GetUrl() { return *(FString::FString*)((uintptr_t)this + FCurlHookOpts::GETURL_ADDR); }
-        static bool ProcessRequest(FCurlHook* req);
+        static bool ProcessRequest(FCurlHook* Req) { return InternalHooks::InternalProcessRequest(Req, false); };
         static void* SetupHook(void* handle);
     };
 
@@ -25,7 +29,7 @@ namespace Hooks {
         static bool (*OGProcessRequest)(void*);
 
         FString::FString& GetUrl() { return *(FString::FString*)((uintptr_t)this + EOSFCurlHookOpts::GETURL_ADDR); }
-        static bool ProcessRequest(EOSFCurlHook* req);
+        static bool ProcessRequest(EOSFCurlHook* Req) { return InternalHooks::InternalProcessRequest(Req, true); };
         static void* SetupHook(void* handle);
     };
 }
