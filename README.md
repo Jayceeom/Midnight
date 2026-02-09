@@ -1,4 +1,4 @@
-# Nightfall
+# Midnight
 Nightfall is a universal Fortnite Redirect/SSL Bypass that has one main goal, that is to redirect from **Epic Games** backend services to a **Hosted Custom Fortnite Backend** to give ability for Fortnite private servers to have Mobile support.
 
 ## Branches
@@ -50,7 +50,7 @@ java -jar apktool.jar build ./Fortnite -o fortnite_modded.apk
 
 Note that you still need to sign it for it to work use ``uber-apk-signer`` for example or some other tool this command uses ``uber-apk-signer`` to sign the apk:
 ```bash
-java -jar uber-apk-signer.jar --apks app-release-unsigned.apk
+java -jar uber-apk-signer.jar --apks fortnite_modded.apk
 ```
 
 Now you got a fully working apk you can install on your phone and play **Fortnite mobile** on your **Private Server**. if you found this tool helpful don't forget to star the repo and if you want to use this tool for your **Private Server** don't forget to credit the owner (razerfrfr) it's much appreciated.
