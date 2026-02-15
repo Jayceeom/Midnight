@@ -77,3 +77,13 @@ EOS 28.30
 ProcessRequest = 0x1105254
 GetUrl = 0x178
 SetUrl = 0x1101C08
+
+30.00 - 33962396
+ProcessRequest = 0x52C7E74
+GetUrl = 0x270
+SetUrl = 0x9E8D490
+
+EOS 30.00 - 33962396
+ProcessRequest = 0x10A8148
+GetUrl = 0x178
+SetUrl = 0x10A4AFC
