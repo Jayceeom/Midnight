@@ -1,5 +1,5 @@
 # Midnight
-Nightfall is a universal Fortnite Redirect/SSL Bypass that has one main goal, that is to redirect from **Epic Games** backend services to a **Hosted Custom Fortnite Backend** to give ability for Fortnite private servers to have Mobile support.
+Midnight is a universal Fortnite Redirect/SSL Bypass that has one main goal, that is to redirect from **Epic Games** backend services to a **Hosted Custom Fortnite Backend** to give ability for Fortnite private servers to have Mobile support.
 
 ## Branches
 - **Android (Main)**: Android version of the redirect.
