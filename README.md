@@ -3,7 +3,7 @@ Midnight is a universal Fortnite Redirect/SSL Bypass that has one main goal, tha
 
 ## Branches
 - **Android (Main)**: Android version of the redirect.
-- **iOS**: Coming Soon.
+- **iOS**: iOS version of the redirect.
 
 ## Support
 - **5.21 - 18.30:** by hooking **curl_easy_setopt**.
